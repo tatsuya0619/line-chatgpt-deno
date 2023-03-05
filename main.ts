@@ -36,6 +36,7 @@ async function eventMessageHandler(event: MessageEvent) {
 
   histories.push({ role: "user", content: event.message.text });
 
+  console.log("histories = ", histories);
   const gptAnswer = await chatCompletion(
     histories,
     { role: "system", content: OPENAI_SYSTEM_ORDER },
@@ -55,7 +56,7 @@ async function eventMessageHandler(event: MessageEvent) {
 
 async function handler(req: Request): Promise<Response> {
   const { pathname } = new URL(req.url);
-  console.log("pathname = ", pathname);
+  console.log("req = ", req);
   if (pathname == "/") {
     if (!(await isValidRequest(req.clone(), LINE_CHANNEL_SECRET_KEY))) {
       return notFoundResponse;
@@ -64,8 +65,7 @@ async function handler(req: Request): Promise<Response> {
     console.log("Received body =", reqBodyJson);
     for (const event of reqBodyJson.events) {
       if (isMessageEvent(event)) {
-        const messageEvent: MessageEvent = event;
-        eventMessageHandler(messageEvent);
+        eventMessageHandler(event);
       }
       console.warn("Received event other than Message Event");
     }

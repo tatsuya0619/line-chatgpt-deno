@@ -23,6 +23,5 @@ export async function chatCompletion(
   const data = await res.json();
   console.log("response from chatGPT api = ", data);
   const choice = 0;
-  console.log("generated answer = ", data.choices[choice].message);
   return data.choices[choice].message;
 }
