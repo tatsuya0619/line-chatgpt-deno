@@ -76,6 +76,7 @@ export function isMessageEvent(messageEvent: MessageEvent): boolean {
 }
 
 function generateMessageArray(text: string) {
+  // These limitations come from Line API.
   const arrayLengthLimit = 5;
   const elementLengthLimit = 5000;
   const messageArray = [];
