@@ -65,9 +65,10 @@ async function handler(req: Request): Promise<Response> {
     console.log("Received body =", reqBodyJson);
     for (const event of reqBodyJson.events) {
       if (isMessageEvent(event)) {
-        eventMessageHandler(event);
+        await eventMessageHandler(event);
+      } else {
+        console.warn("Received event other than Message Event");
       }
-      console.warn("Received event other than Message Event");
     }
     return new Response("Success");
   } else {
