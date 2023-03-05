@@ -1,41 +1,78 @@
 import { serve } from "https://deno.land/std@0.178.0/http/server.ts";
+import { chatCompletion, GptMessage } from "./chat_gpt.ts";
+import {
+  isValidRequest,
+  MessageEvent,
+  isMessageEvent,
+  reply,
+} from "./line_api.ts";
 
-const OPENAI_API_KEY = Deno.env.get("OPEN_API_KEY");
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
+const OPENAI_SYSTEM_ORDER =
+  Deno.env.get("OPENAI_SYSTEM_ORDER") || "You are a helpful assistant.";
+const OPENAI_HISTORY_LIMIT = Number(Deno.env.get("OPENAI_HISTORY_LIMIT")) || 8;
+const LINE_CHANNEL_SECRET_KEY = Deno.env.get("LINE_CHANNEL_SECRET_KEY") || "";
+const LINE_CHANNEL_ACCESS_TOKEN =
+  Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN") || "";
 
-export type Message = {
-  role: "user" | "system" | "assistant";
-  content: string;
-};
+const notFoundResponse = new Response(
+  JSON.stringify({ message: "NOT FOUND" }),
+  {
+    status: 404,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+    },
+  }
+);
 
-export function add(a: number, b: number): number {
-  return a + b;
+const historyMap = new Map<string, GptMessage[]>();
+
+async function eventMessageHandler(event: MessageEvent) {
+  console.log("Received Message Event");
+  let histories = historyMap.get(event.source.userId);
+  if (histories == undefined) {
+    histories = [];
+  }
+
+  histories.push({ role: "user", content: event.message.text });
+
+  const gptAnswer = await chatCompletion(
+    histories,
+    { role: "system", content: OPENAI_SYSTEM_ORDER },
+    OPENAI_API_KEY
+  );
+  if (gptAnswer == undefined) {
+    console.error("fail to generate answer");
+    return;
+  }
+  await reply(event.replyToken, gptAnswer?.content, LINE_CHANNEL_ACCESS_TOKEN);
+  histories.push(gptAnswer);
+
+  while (histories.length > OPENAI_HISTORY_LIMIT) {
+    historyMap.get(event.source.userId)?.shift();
+  }
 }
 
-export const chatCompletion = async (
-  messages: Message[],
-  apiKey: string
-): Promise<Message | undefined> => {
-  const body = JSON.stringify({
-    messages,
-    model: "gpt-3.5-turbo",
-  });
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body,
-  });
-  const data = await res.json();
-  const choice = 0;
-  return data.choices[choice].message;
-};
-
-function handler(req: Request): Response {
-  console.log(req);
-  return new Response("Hello, World!");
+async function handler(req: Request): Promise<Response> {
+  const { pathname } = new URL(req.url);
+  console.log("pathname = ", pathname);
+  if (pathname == "/") {
+    if (!(await isValidRequest(req.clone(), LINE_CHANNEL_SECRET_KEY))) {
+      return notFoundResponse;
+    }
+    const reqBodyJson = await req.json();
+    console.log("Received body =", reqBodyJson);
+    for (const event of reqBodyJson.events) {
+      if (isMessageEvent(event)) {
+        const messageEvent: MessageEvent = event;
+        eventMessageHandler(messageEvent);
+      }
+      console.warn("Received event other than Message Event");
+    }
+    return new Response("Success");
+  } else {
+    return notFoundResponse;
+  }
 }
 if (import.meta.main) {
   serve(handler, { port: 4242 });
