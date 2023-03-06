@@ -1,7 +1,7 @@
-export type GptMessage = {
+export interface GptMessage {
   role: "user" | "system" | "assistant";
   content: string;
-};
+}
 
 export async function chatCompletion(
   messages: GptMessage[],

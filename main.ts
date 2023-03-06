@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.178.0/http/server.ts";
-import { chatCompletion, GptMessage } from "./chat_gpt.ts";
+import { chatCompletion } from "./chat_gpt.ts";
 import {
   isValidRequest,
   MessageEvent,
   isMessageEvent,
   reply,
 } from "./line_api.ts";
+import { putChatData, getChatData } from "./chatsDB.ts";
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
 const OPENAI_SYSTEM_ORDER =
@@ -25,32 +26,36 @@ const notFoundResponse = new Response(
   }
 );
 
-const historyMap = new Map<string, GptMessage[]>();
-
 async function eventMessageHandler(event: MessageEvent) {
   console.log("Received Message Event");
-  let histories = historyMap.get(event.source.userId);
-  if (histories == undefined) {
-    histories = [];
+  let chatData = await getChatData(event.source.userId);
+  console.log("got ChatData = ", chatData);
+  if (chatData == undefined) {
+    chatData = {
+      systemOrder: { role: "system", content: OPENAI_SYSTEM_ORDER },
+      chatHistory: [],
+    };
   }
 
-  histories.push({ role: "user", content: event.message.text });
+  chatData.chatHistory.push({ role: "user", content: event.message.text });
 
-  console.log("histories = ", histories);
   const gptAnswer = await chatCompletion(
-    histories,
-    { role: "system", content: OPENAI_SYSTEM_ORDER },
+    chatData.chatHistory,
+    chatData.systemOrder,
     OPENAI_API_KEY
   );
   if (gptAnswer == undefined) {
     console.error("fail to generate answer");
     return;
   }
+  // Reply to the line user
   await reply(event.replyToken, gptAnswer?.content, LINE_CHANNEL_ACCESS_TOKEN);
-  histories.push(gptAnswer);
+  chatData.chatHistory.push(gptAnswer);
+  await putChatData(event.source.userId, chatData);
 
-  while (histories.length > OPENAI_HISTORY_LIMIT) {
-    historyMap.get(event.source.userId)?.shift();
+  // Pop until the length is smaller than the threshold
+  while (chatData.chatHistory.length > OPENAI_HISTORY_LIMIT) {
+    chatData.chatHistory.shift();
   }
 }
 
