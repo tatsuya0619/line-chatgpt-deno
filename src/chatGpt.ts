@@ -1,12 +1,12 @@
+import { ChatData } from "./interfaces/chatData.ts";
 import { GptMessage } from "./interfaces/gptMessage.ts";
 
 export async function chatCompletion(
-  messages: GptMessage[],
-  systemOrder: GptMessage,
+  chatData: ChatData,
   apiKey: string
 ): Promise<GptMessage | undefined> {
   const body = JSON.stringify({
-    messages: [systemOrder].concat(messages),
+    messages: [chatData.systemOrder].concat(chatData.chatHistory),
     model: "gpt-3.5-turbo",
   });
   const res = await fetch("https://api.openai.com/v1/chat/completions", {

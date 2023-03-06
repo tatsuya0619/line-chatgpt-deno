@@ -2,6 +2,7 @@ import { ApiFactory } from "https://deno.land/x/aws_api@v0.7.0/client/mod.ts";
 import { DynamoDB } from "https://deno.land/x/aws_api@v0.7.0/services/dynamodb/mod.ts";
 import { GptMessage } from "./interfaces/gptMessage.ts";
 import { DynamoChatHistory } from "./interfaces/dynamoChatHistory.ts";
+import { ChatData } from "./interfaces/chatData.ts";
 const client = new ApiFactory().makeNew(DynamoDB);
 
 function convertGptMessagesToDynamoChats(
@@ -19,10 +20,7 @@ function convertGptMessagesToDynamoChats(
   };
 }
 
-export async function putChatData(
-  userId: string,
-  chatData: { systemOrder: GptMessage; chatHistory: GptMessage[] }
-) {
+export async function putChatData(userId: string, chatData: ChatData) {
   try {
     await client.putItem({
       TableName: "ChatHistories",
@@ -50,7 +48,7 @@ function convertDynamoChatsToGptMessages(
 
 export async function getChatData(
   userId: string
-): Promise<{ chatHistory: GptMessage[]; systemOrder: GptMessage } | undefined> {
+): Promise<ChatData | undefined> {
   const histories = await client.getItem({
     TableName: "ChatHistories",
     Key: {

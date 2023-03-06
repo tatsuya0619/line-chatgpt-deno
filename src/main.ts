@@ -35,11 +35,7 @@ async function eventMessageHandler(event: MessageEvent) {
 
   chatData.chatHistory.push({ role: "user", content: event.message.text });
 
-  const gptAnswer = await chatCompletion(
-    chatData.chatHistory,
-    chatData.systemOrder,
-    OPENAI_API_KEY
-  );
+  const gptAnswer = await chatCompletion(chatData, OPENAI_API_KEY);
   if (gptAnswer == undefined) {
     console.error("fail to generate answer");
     return;
