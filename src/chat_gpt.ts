@@ -1,7 +1,4 @@
-export interface GptMessage {
-  role: "user" | "system" | "assistant";
-  content: string;
-}
+import { GptMessage } from "./interfaces/GptMessage.ts";
 
 export async function chatCompletion(
   messages: GptMessage[],

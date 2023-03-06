@@ -1,16 +1,8 @@
 import { ApiFactory } from "https://deno.land/x/aws_api@v0.7.0/client/mod.ts";
 import { DynamoDB } from "https://deno.land/x/aws_api@v0.7.0/services/dynamodb/mod.ts";
-import { GptMessage } from "./chat_gpt.ts";
+import { GptMessage } from "./interfaces/GptMessage.ts";
+import { DynamoChatHistory } from "./interfaces/dynamoChatHistory.ts";
 const client = new ApiFactory().makeNew(DynamoDB);
-
-interface DynamoChatHistory {
-  L: {
-    M: {
-      role: { S: string };
-      content: { S: string };
-    };
-  }[];
-}
 
 function convertGptMessagesToDynamoChats(
   gptMessages: GptMessage[]

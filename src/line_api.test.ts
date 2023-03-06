@@ -1,4 +1,4 @@
-import { isMessageEvent } from "./line_api.ts";
+import { isMessageEvent } from "./interfaces/line.ts";
 import { assert } from "https://deno.land/std@0.178.0/testing/asserts.ts";
 Deno.test("isMessageEvent success with valid input", () => {
   assert(

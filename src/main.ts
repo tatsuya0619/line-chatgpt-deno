@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.178.0/http/server.ts";
 import { chatCompletion } from "./chat_gpt.ts";
-import {
-  isValidRequest,
-  MessageEvent,
-  isMessageEvent,
-  reply,
-} from "./line_api.ts";
+import { reply, isValidRequest } from "./line_api.ts";
+import { MessageEvent, isMessageEvent } from "./interfaces/line.ts";
 import { putChatData, getChatData } from "./chatsDB.ts";
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
