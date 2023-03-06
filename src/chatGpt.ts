@@ -1,4 +1,4 @@
-import { GptMessage } from "./interfaces/GptMessage.ts";
+import { GptMessage } from "./interfaces/gptMessage.ts";
 
 export async function chatCompletion(
   messages: GptMessage[],

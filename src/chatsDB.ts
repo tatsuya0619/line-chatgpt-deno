@@ -1,6 +1,6 @@
 import { ApiFactory } from "https://deno.land/x/aws_api@v0.7.0/client/mod.ts";
 import { DynamoDB } from "https://deno.land/x/aws_api@v0.7.0/services/dynamodb/mod.ts";
-import { GptMessage } from "./interfaces/GptMessage.ts";
+import { GptMessage } from "./interfaces/gptMessage.ts";
 import { DynamoChatHistory } from "./interfaces/dynamoChatHistory.ts";
 const client = new ApiFactory().makeNew(DynamoDB);
 

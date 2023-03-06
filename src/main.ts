@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.178.0/http/server.ts";
-import { chatCompletion } from "./chat_gpt.ts";
-import { reply, isValidRequest } from "./line_api.ts";
+import { chatCompletion } from "./chatGpt.ts";
+import { reply, isValidRequest } from "./lineApi.ts";
 import { MessageEvent, isMessageEvent } from "./interfaces/line.ts";
 import { putChatData, getChatData } from "./chatsDB.ts";
 
