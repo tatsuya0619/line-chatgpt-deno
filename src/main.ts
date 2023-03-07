@@ -43,12 +43,11 @@ async function eventMessageHandler(event: MessageEvent) {
   // Reply to the line user
   await reply(event.replyToken, gptAnswer?.content, LINE_CHANNEL_ACCESS_TOKEN);
   chatData.chatHistory.push(gptAnswer);
-  await putChatData(event.source.userId, chatData);
-
   // Pop until the length is smaller than the threshold
   while (chatData.chatHistory.length > OPENAI_HISTORY_LIMIT) {
     chatData.chatHistory.shift();
   }
+  await putChatData(event.source.userId, chatData);
 }
 
 async function handler(req: Request): Promise<Response> {
