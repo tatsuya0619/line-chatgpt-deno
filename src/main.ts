@@ -2,7 +2,12 @@ import { serve } from "https://deno.land/std@0.178.0/http/server.ts";
 import { chatCompletion } from "./chatGpt.ts";
 import { reply, isValidRequest } from "./lineApi.ts";
 import { MessageEvent, isMessageEvent } from "./interfaces/line.ts";
-import { putChatData, getChatData } from "./chatsDB.ts";
+import {
+  putChatData,
+  getChatData,
+  generateInitialChatData,
+} from "./chatsDB.ts";
+import { isCommand, runCommand } from "./command.ts";
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
 const OPENAI_SYSTEM_ORDER =
@@ -22,32 +27,43 @@ const notFoundResponse = new Response(
   }
 );
 
-async function eventMessageHandler(event: MessageEvent) {
-  console.log("Received Message Event");
-  let chatData = await getChatData(event.source.userId);
+async function generateResponse(userId: string, text: string): Promise<string> {
+  // Fetch chatData from DB
+  let chatData = await getChatData(userId);
   console.log("got ChatData = ", chatData);
   if (chatData == undefined) {
-    chatData = {
-      systemOrder: { role: "system", content: OPENAI_SYSTEM_ORDER },
-      chatHistory: [],
-    };
+    chatData = generateInitialChatData(OPENAI_SYSTEM_ORDER);
   }
-
-  chatData.chatHistory.push({ role: "user", content: event.message.text });
-
+  chatData.chatHistory.push({ role: "user", content: text });
   const gptAnswer = await chatCompletion(chatData, OPENAI_API_KEY);
   if (gptAnswer == undefined) {
-    console.error("fail to generate answer");
-    return;
+    throw new Error("fail to generate answer");
   }
-  // Reply to the line user
-  await reply(event.replyToken, gptAnswer?.content, LINE_CHANNEL_ACCESS_TOKEN);
+
   chatData.chatHistory.push(gptAnswer);
   // Pop until the length is smaller than the threshold
   while (chatData.chatHistory.length > OPENAI_HISTORY_LIMIT) {
     chatData.chatHistory.shift();
   }
-  await putChatData(event.source.userId, chatData);
+  await putChatData(userId, chatData);
+
+  return gptAnswer.content;
+}
+
+async function eventMessageHandler(event: MessageEvent) {
+  console.log("Received Message Event");
+  let responseText: string;
+  const text = event.message.text.trim();
+  if (isCommand(text)) {
+    responseText = await runCommand(event.source.userId, text);
+  } else {
+    responseText = await generateResponse(
+      event.source.userId,
+      event.message.text
+    );
+  }
+  // Reply to the line user
+  await reply(event.replyToken, responseText, LINE_CHANNEL_ACCESS_TOKEN);
 }
 
 async function handler(req: Request): Promise<Response> {

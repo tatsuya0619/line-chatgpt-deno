@@ -69,3 +69,23 @@ export async function getChatData(
 
   return { systemOrder, chatHistory };
 }
+
+export async function deleteChatData(userId: string) {
+  try {
+    await client.deleteItem({
+      TableName: "ChatHistories",
+      Key: {
+        userId: { S: userId },
+      },
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export function generateInitialChatData(systemOrder: string): ChatData {
+  return {
+    systemOrder: { role: "system", content: systemOrder },
+    chatHistory: [],
+  };
+}
